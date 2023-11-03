@@ -8,47 +8,55 @@
 5. [License Information](#license-information)
 
 ## Project Description
-The Pinterest Data Pipeline project is designed to emulate user postings on Pinterest and capture this data for further analysis. The project leverages AWS services, including VPC, EC2, and MSK (Managed Streaming for Kafka), to create a robust and scalable data pipeline. The primary aim of this project is to understand the intricacies of data flow, from user postings on Pinterest to data storage and analysis.
+The Pinterest Data Pipeline project is designed to emulate the process of gathering and storing user posting data, similar to what platforms like Pinterest might do. The aim is to help you understand how data can be efficiently collected, processed, and stored in a cloud environment, specifically using AWS services. By diving into this project, you will get a hands-on experience with various AWS services and data processing tools, giving you a taste of what it's like to work on real-world data engineering tasks.
 
-### What it does:
-The project processes data related to Pinterest posts, their geolocations, and the users who made these posts. The main script called `user_posting_emulation.py` outputs the following data in this format:
-    - pinterest_data contains data about posts being updated to Pinterest
-    - geolocation_data contains data about the geolocation of each Pinterest post found in pinterest_data
-    - user_data contains data about the user that has uploaded each post found in pinterest_data
- It uses a combination of AWS services, Kafka, and other tools to create a pipeline that takes in data, processes it, stores it in a structured manner and mounted on Databricks for further analysis.
+### Project Aim:
+The primary goal of this project is to provide hands-on experience with setting up and managing a data pipeline. It offers insights into how large-scale applications like Pinterest handle vast amounts of data, ensuring it's processed efficiently and stored securely. The aim is to create a robust data pipeline that enables me to:
 
-### Aim of the project:
-The primary goal of this project is to provide hands-on experience with setting up and managing a data pipeline. It offers insights into how large-scale applications like Pinterest handle vast amounts of data, ensuring it's processed efficiently and stored securely.
+- **Collect Pinterest Data:** Set up a system to capture data from Pinterest, including posts, geolocation information, and user data.
+
+- **Process Data with Kafka:** Use Apache Kafka to efficiently process the incoming data, ensuring smooth data flow and scalability.
+
+- **Store Data in S3:** Store the processed data in an Amazon S3 bucket, making it readily accessible for further analysis.
+
+- **Enable API Integration:** Create an API to stream data to the Kafka cluster and subsequently store it in the S3 bucket.
+
+- **Analyze Data with Databricks:** Connect Databricks to my S3 bucket to perform batch data analysis on the collected Pinterest data.
 
 ### What I learned:
-Through the development and implementation of this project, several key learnings were achieved:
+Through the development and implementation of this project, I have gained hands-on experience with several important concepts and tools used in the world of data engineering and cloud computing:
 
-- **AWS Service Integrations:** Gained hands-on experience in integrating various AWS services to create a cohesive data pipeline.
-- **Kafka Cluster Management:** Learned the intricacies of setting up and managing a Kafka cluster, ensuring data is streamed efficiently.
-- **Data Pipeline Design:** Understood the importance of designing a robust and scalable data pipeline, ensuring data integrity and availability.
-- **MSK Cluster Setup:** Grasped the process of setting up an MSK cluster on AWS, understanding its role in data streaming.
-- **Kafka Setup on EC2:** Delved into the details of setting up Kafka on an EC2 instance, ensuring seamless data streaming to the MSK cluster.
-- **S3 Storage:** Learned the process of storing data in S3 buckets, ensuring data durability and availability.
-- **API Gateway Creation:** Understood the significance of creating an API gateway to stream data to the MSK cluster.
-- **Databricks for Data Analysis:** Gained insights into using Databricks for querying batch data stored in S3.
+- **AWS Services:** I have become familiar with Amazon Web Services, including IAM, VPC, EC2, and S3, and understand how to set up roles and permissions.
+
+- **Apache Kafka:** I learned how to install, configure, and use Kafka on an EC2 instance for real-time data streaming and processing.
+
+- **MSK Cluster:** I explored Amazon Managed Streaming for Apache Kafka (MSK) to create and manage Kafka clusters on AWS.
+
+- **API Gateway:** I understood how to create and configure an API using AWS API Gateway for data streaming.
+
+- **Kafka REST Proxy:** I set up a Kafka REST Proxy for easy communication with my Kafka cluster, and learned about IAM authentication.
+
+- **Databricks:** I used Databricks to analyze and query data stored in my S3 bucket, gaining insights from the collected Pinterest data.
+
+- **GitHub Repository:** I also worked with Git and GitHub to clone the project repository and manage my codebase.
 
 ## Installation Instructions
 
 #### Prerequisites
 - Python 3.x
-- Required Python Packages (SQLAlchemy, PyYAML, PyMySQL)
+- Required Python Packages (SQLAlchemy, PyMySQL)
 - Knowledge of Linux OS/ Windows WSL and AWS services
 
 First start by cloning the repository to your local machine.
 ```bash
-    git clone https://github.com/RyanJKS/pinterest-data-pipeline.git
+git clone https://github.com/RyanJKS/pinterest-data-pipeline.git
 ```
 
 ### AWS Setup (IAM, VPC & EC2)
 1. Create an AWS account (For this project, the region was set to 'us-east-1') 
 
 2. Create an IAM user using the Principle of Least Priviledge
-> Note: The IAM User's username will be denoted as <UserID> to align with common naming conventions used by companies in the software development lifecycle.
+> Note: The IAM User's username will be denoted as `<UserID>` to align with common naming conventions used by companies in the software development lifecycle.
 
 3. Create a VPC and launch an EC2 instance within its subnet.
 - Configure the security group of the VPC and EC2 to allow internet access.
@@ -118,7 +126,7 @@ sasl.jaas.config = software.amazon.msk.auth.iam.IAMLoginModule required awsRoleA
 sasl.client.callback.handler.class = software.amazon.msk.auth.iam.IAMClientCallbackHandler
 ```
 
-5. Create Kafka Topics. Navigate to `kafka_2.12-2.8.1/bin` and run the following command, replacing **BootstrapServerString** with the connection string previously save and `<topic_name> with the following:
+5. Create Kafka Topics. Navigate to `kafka_2.12-2.8.1/bin` and run the following command, replacing **BootstrapServerString** with the connection string previously save and `<topic_name>` with the following:
 
 ```bash
 ./kafka-console-producer.sh --bootstrap-server BootstrapServerString --producer.config client.properties --group students --topic <topic_name>
@@ -266,109 +274,55 @@ The figure below shows how it should be set up.
   <img src="/images/databricks-compute-config.png" alt="Databricks_Compute_Configure">
 </div>
 
-4. Connect S3 bucket to Databricks
-- Create an access key and a secret access key for Databricks in AWS
+4. IAM Authentication credentials in Databricks
+- Download the access key and a secret access key for Databricks in AWS
     - This can be found under IAM User -> "Security Credentials"
     - Download the keys in a file named `authentication_credentials.csv`
-- Mount AWS S3 bucket to Databricks.
-    - Upload the file on Databricks and check if the file has been uploaded by running this command in a notebook
-    ```bash
-    dbutils.fs.ls("/FileStore/tables/")
-    ```
-    - Run the code below in a notebook to read the AWS keys to databricks
-    ```python
-    # pyspark functions
-    from pyspark.sql.functions import *
-    # URL processing
-    import urllib
+    - Upload the file on Databricks.
 
-    # Specify file type to be csv
-    file_type = "csv"
-    # Indicates file has first row as the header
-    first_row_is_header = "true"
-    # Indicates file has comma as the delimeter
-    delimiter = ","
-    # Read the CSV file to spark dataframe
-    aws_keys_df = spark.read.format(file_type)\
-    .option("header", first_row_is_header)\
-    .option("sep", delimiter)\
-    .load("/FileStore/tables/authentication_credentials.csv")
-    ```
+5. Mount S3 bucket and querying data in Databricks
+    - Run the code found in `mount_s3_to_databricks.py` in a notebook in databricks.
+    
+    - This code within the file serves the following purposes:
+        - It reads AWS access keys from a notebook in Databricks and encodes them using the `urllib.parse.quote` function.
 
-    - Extract and encode the access keys using `urllib.parse.quote`, by running the following command.
-    ```python
-    # Get the AWS access key and secret key from the spark dataframe
-    ACCESS_KEY = aws_keys_df.where(col('User name')=='databricks-user').select('Access key ID').collect()[0]['Access key ID']
-    SECRET_KEY = aws_keys_df.where(col('User name')=='databricks-user').select('Secret access key').collect()[0]['Secret access key']
-    # Encode the secrete key
-    ENCODED_SECRET_KEY = urllib.parse.quote(string=SECRET_KEY, safe="")
-    ```
-    - Mount S3 bucket using **S3 Bucket Name** into a desired mount name `mnt/s3-bucket` using `dbutils.fs.mount()`.
-    ```python
-    # AWS S3 bucket name
-    AWS_S3_BUCKET = "<user-<UserID>-bucket>"
-    # Mount name for the bucket
-    MOUNT_NAME = "/mnt/s3_bucket"
-    # Source url
-    SOURCE_URL = "s3n://{0}:{1}@{2}".format(ACCESS_KEY, ENCODED_SECRET_KEY, AWS_S3_BUCKET)
-    # Mount the drive
-    dbutils.fs.mount(SOURCE_URL, MOUNT_NAME)
-    ```
->If successful, the code will output **True** and you will only need to mount it once before accessing it on Databricks at any time.
+        - It mounts an AWS S3 bucket with a specified name (`S3 Bucket Name`) into a desired mount location (`mnt/s3-bucket`) using `dbutils.fs.mount()`. You'll need to replace `AWS_S3_Bucket` with your chosen bucket name in the code. If successful, the code will return `True`, and you'll only need to perform this mount operation once to access the S3 bucket in Databricks.
 
-5. Read JSON files from mounted S3 bucket
-- Read the contents inside the S3 bucket as JSON and store it in a dataframe. The following command will output the following 3 dataframes for each topics:
-    - `df_pin` for the pinterest post data
-    - `df_geo` for the geolocation data
-    - `df_user` for the user data.
+        - It reads JSON files from the mounted S3 bucket and stores the contents as dataframes. Specifically, it generates three dataframes:
+            - `df_pin` for Pinterest post data.
+            - `df_geo` for geolocation data.
+            - `df_user` for user data.
 
-> Note: Each path to the JSON objects should be the same as seen in your S3 bucket (e.g `topics/<UserID>.pin/partition=0/`).
-
-```python
-# File location and type
-file_type = "json"
-# Ask Spark to infer the schema
-infer_schema = "true"
-
-# Asterisk(*) indicates reading all the content of the specified file that have .json extension
-pin_file_location = "/mnt/s3_bucket/topics/0a3db223d459.pin/partition=0/*.json"
-geo_file_location = "/mnt/s3_bucket/topics/0a3db223d459.geo/partition=0/*.json"
-user_file_location = "/mnt/s3_bucket/topics/0a3db223d459.user/partition=0/*.json"
-
-# Function to read JSON data from a given file location in mounted S3 bucket and return dataframe
-def create_spark_dataframe(file_location):
-    return spark.read.format(file_type) \
-        .option("inferSchema", infer_schema) \
-        .load(file_location)
-
-df_pin = create_spark_dataframe(pin_file_location)
-df_geo = create_spark_dataframe(geo_file_location)
-df_user = create_spark_dataframe(user_file_location)
-
-# Display Spark dataframe to check its content
-display(df_pin)
-display(df_geo)
-display(df_user)
-```
+        > Note: The path to the JSON objects in your S3 bucket should match the structure seen in the file_location url: `topics/<UserID>.pin/partition=0/`
 
 **Optional:** To unmount the S3 bucket, run the following command:
 ```python
 dbutils.fs.unmount("/mnt/s3_bucket")
 ```
 
-
 ## Usage Instructions
+
+### Key Scripts
+- `user_posting_emulation.py`: Contains a script that extracts pinterest data from MySQL database and uploads it to an S3 bucket though an API Gateway that goes through an MSK cluster on EC2 instance. The data sent are as follows:
+    - `pinterest_data` contains data about posts being updated to Pinterest
+    - `geolocation_data` contains data about the geolocation of each Pinterest post found in pinterest_data 
+    - `user_data` contains data about the user that has uploaded each post found in pinterest_data
+- `mount_s3_to_databricks.py`: Contains a script which needs to be run on databricks in order to mount the S3 bucket onto databricks and do further analysis.
+
+### Usage
 
 1. In the `user_posting_emulation.py` script, replace the `invoke_url` with your own url that you have saved previously.
 2. Run the script to begin emulating user postings and send the data to the S3 bucket where it is then available on Databricks for analysis.
 
 
-
 ## File Structure
 
 |-- Pinterest Data Pipeline
+
     Local Machine
     |-- user_posting_Emulation.py
+    |-- README.md
+    |-- mount_s3_to_databricks.py
 
     EC2 Instance
     |-- kafka_folder
