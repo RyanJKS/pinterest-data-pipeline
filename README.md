@@ -23,6 +23,8 @@ The primary goal of this project is to provide hands-on experience with setting 
 
 - **Analyze Data with Databricks:** Connect Databricks to my S3 bucket to perform batch data analysis on the collected Pinterest data.
 
+- **Orchestrate Workflows with MWAA:** Use Managed Workflows for Apache Airflow (MWAA) to orchestrate complex workflows using Directed Acyclic Graphs (DAGs), enhancing the automation and monitoring of the data pipeline.
+
 ### What I learned:
 Through the development and implementation of this project, I have gained hands-on experience with several important concepts and tools used in the world of data engineering and cloud computing:
 
@@ -39,6 +41,8 @@ Through the development and implementation of this project, I have gained hands-
 - **Apache Spark:** I learned how to make a clusters, mount S3 buckets, assume IAM roles, store data in metastore, clean and query data for analysis in databricks.
 
 - **Databricks:** I used Databricks to analyze and query data stored in my S3 bucket, gaining insights from the collected Pinterest data.
+
+- **Apache Airflow (MWAA):** I've learned to create and manage an Airflow environment, orchestrate workflows using DAGs, and integrate with Databricks for workload automation, which has significantly enhanced my understanding of workflow management in cloud environments.
 
 #### Additional Information
 In this project, data was cleaned in **Databricks** using **Spark** and then using **SQL** queries to make useful analyis. Below are the full list of tasks and a few examples that were done in order to acquire useful information.
@@ -356,6 +360,72 @@ The figure below shows how it should be set up.
         - It reads AWS access keys from a notebook in Databricks and encodes them using the `urllib.parse.quote` function.
 
         - It mounts an AWS S3 bucket with a specified name (`S3 Bucket Name`) into a desired mount location (`mnt/s3-bucket`) using `dbutils.fs.mount()`. You need to replace `AWS_S3_Bucket` with your chosen bucket name in the code. If successful, the code will return `True`, and you'll only need to perform this mount operation once to access the S3 bucket in Databricks.
+
+### Managed Workflows for Apache Airflow (MWAA)
+Create an Airflow enviroment that orcestrates workflows using **Directed Acyclic Graphs (DAGs)** along with python requirements and plugins which reside an S3 bucket.
+
+1. Create an S3 bucket called `mwaa-dags-bucket` which is configured as shown below and create a folder called `dags` in this bucket.
+    - Set the bucket to the same region as defined previously `us-east-1`
+    - Block all public access
+    - Bucket Versioning enabled.
+> Make a note of the S3 bucket URI
+
+2. Create a MWAA Environment called `Databricks-Airflow-env` in AWS console and paste the S3 bucket URI and `dags` folder URI when prompted.
+    - **Networking Section**: Choose "Create MWAA VPC" to automatically create a VPC with its corresponding subnets.
+    - **Web server Access Mode** for Apache Airflow: Choose private network.
+    - **Security Group**: Chose "Create new security group"
+    - **Enviroment**: Select appropriate enviroment size that can support the workload.
+
+3. Access Airflow UI after creating the enviroment on the AWS Console by clicking on **Open Airflow UI**. You will then be able to see all the `dags` file that are in the S3 bucket in the UI.
+
+4. Create a connection between MWAA and Databricks to orchestrate workloads using **Job API**
+    - Create an API Access token in Databricks and make a note of this token which will be denoted as `<token_id>`.
+    - Open the Airflow UI from the MWAA environment. Navigate to Admin and then select Connections.
+    - Select **databricks_default** and **Edit record** by adding the following:
+        - **Host**: `<databricks_account_url>`
+        - **Extra**: Add the following dictionary
+        ```javascript
+            {"token": "<token_id>", "host": "<url_from_host_column>"}
+        ```
+        - **Connection Type**: Select Databricks from drop-down menu.
+
+**Optional:** If the connection type, "Databricks". is not available, you will need to install additional packages using *Airflow Provider Package*. Create and upload `requirements.txt` file in the S3 `mwaa-dags-bucket` which consists of the python dependency in the MWAA environemnet.
+
+1. The `requirements.txt` should contain the following:
+```bash
+--constraint "https://raw.githubusercontent.com/apache/airflow/constraints-2.6.3/constraints-3.10.txt"
+
+apache-airflow-providers-snowflake==4.2.0
+apache-airflow-providers-mysql==5.1.1
+apache-airflow[databricks]
+```
+
+2. To test if the created `requirements.txt` file works correctly, before uploading it to the MWAA environment, you can build a **docker** image locally  using cli on your machine. This allows you to run a local Airflow environment to develop/test DAGs, custom plugins and dependencies before deploying them to the cloud. Follow the commands below for testing:
+
+    - Clone the `aws-mwaa-local-runner` repo, navigate to the `aws-mwaa-local-runner` folder and build a docker image
+    ```bash
+    git clone https://github.com/aws/aws-mwaa-local-runner.git
+
+    cd aws-mwaa-local-runner
+
+    ./mwaa-local-env build-image
+    ```
+    - Once the image is built, run the local Airflow Enviroment using the command below:
+    ```bash
+    ./mwaa-local-env start
+    ```
+    - Navigate to `requirements/` where you will find an intial `requirements.txt` file where will you need to add the following:
+    ```bash
+    apache-airflow[databricks]
+    ```
+    - Test that the `requirements.txt` file works without running Airflow by using the following command:
+    ```bash
+    ./mwaa-local-env test-requirements
+    ```
+    - If everything ran successfully, you can now upload the `requirements.txt` file to the MWAA environment.
+
+3. Navigate to the MWAA console and select your **Environment**. Once you're on the environment page select **Edit**. Under the DAG code in Amazon S3, update your Requirements file field by selecting the path corresponding to the `requirements.txt` file you have just uploaded to the S3 bucket.
+
 
 
 ## Usage Instructions
