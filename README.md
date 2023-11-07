@@ -8,7 +8,7 @@
 5. [License Information](#license-information)
 
 ## Project Description
-The Pinterest Data Pipeline project is designed to emulate the process of gathering and storing user posting data, similar to what platforms like Pinterest might do. The aim is to help you understand how data can be efficiently collected, processed, and stored in a cloud environment, specifically using AWS services. By diving into this project, you will get a hands-on experience with various AWS services and data processing tools, giving you a taste of what it's like to work on real-world data engineering tasks.
+The Pinterest Data Pipeline project is designed to emulate the process of gathering and storing user posting data, similar to what platforms like Pinterest might do. The aim is to understand how data can be efficiently collected, processed, and stored in a cloud environment, specifically using AWS services. By diving into this project, I gained a hands-on experience with various AWS services and data processing tools which in turn gave me a taste of what it's like to work on real-world data engineering tasks.
 
 ### Project Aim:
 The primary goal of this project is to provide hands-on experience with setting up and managing a data pipeline. It offers insights into how large-scale applications like Pinterest handle vast amounts of data, ensuring it's processed efficiently and stored securely. The aim is to create a robust data pipeline that enables me to:
@@ -36,9 +36,78 @@ Through the development and implementation of this project, I have gained hands-
 
 - **Kafka REST Proxy:** I set up a Kafka REST Proxy for easy communication with my Kafka cluster, and learned about IAM authentication.
 
+- **Apache Spark:** I learned how to make a clusters, mount S3 buckets, assume IAM roles, store data in metastore, clean and query data for analysis in databricks.
+
 - **Databricks:** I used Databricks to analyze and query data stored in my S3 bucket, gaining insights from the collected Pinterest data.
 
-- **GitHub Repository:** I also worked with Git and GitHub to clone the project repository and manage my codebase.
+#### Additional Information
+In this project, data was cleaned in **Databricks** using **Spark** and then using **SQL** queries to make useful analyis. Below are the full list of tasks and a few examples that were done in order to acquire useful information.
+
+> Note: Task 1-3 was for cleaning the data and more details can be found in `data_cleaning.py` file
+
+- Task 4: Find the most popular category in each country
+- Task 5: Find which was the most popular category each year
+Query: 
+```sql
+SELECT
+    YEAR(geo.timestamp) AS post_year,
+    pin.category,
+    COUNT(*) AS category_count
+FROM global_temp.df_geo_temp_view AS geo
+JOIN global_temp.df_pin_temp_view AS pin
+    ON geo.ind = pin.ind
+WHERE
+    YEAR(geo.timestamp) BETWEEN 2018 AND 2022
+GROUP BY
+    YEAR(geo.timestamp), pin.category
+ORDER BY
+    post_year DESC, category_count DESC
+```
+Output:
+| post_year       | category    | category_count  | 
+|:-------------:|:-------------:| :-------------:| 
+| 2022           |    beauty   |    8           |
+| 2022           | christmas    |   8           |
+| 2021           | finance      | 23            |
+
+- Task 6: Find the user with most followers in each country
+- Task 7: Find the most popular category for different age groups
+- Task 8: Find the median follower count for different age groups
+
+Query:
+```sql
+WITH AgeGroupCategories AS (
+    SELECT
+        CASE
+            WHEN users.age >= 18 AND users.age <= 24 THEN '18-24'
+            WHEN users.age >= 25 AND users.age <= 35 THEN '25-35'
+            WHEN users.age >= 36 AND users.age <= 50 THEN '36-50'
+            WHEN users.age > 50 THEN '50+'
+        END AS age_group,
+        pin.follower_count
+    FROM global_temp.df_user_temp_view AS users
+    JOIN global_temp.df_pin_temp_view AS pin 
+        ON users.ind = pin.ind
+)
+SELECT
+    age_group,
+    percentile_approx(follower_count, 0.5) AS median_follower_count
+FROM AgeGroupCategories
+GROUP BY age_group
+ORDER BY age_group;
+```
+
+Output:
+| age_group     | median_follower_count | 
+|:-------------:|:--------------------: | 
+| 18-24         | 171000                |
+| 25-35         | 46000                 |
+| 36-50         | 3000                  |
+| 50+           | 3000                  |
+
+- Task 9: Find how many users have joined each year?
+- Task 10: Find the median follwoer count of users based on thei joining year
+- Task 11: Find the median follower count of users based on their joining year and age group
 
 ## Installation Instructions
 
@@ -286,19 +355,8 @@ The figure below shows how it should be set up.
     - This code within the file serves the following purposes:
         - It reads AWS access keys from a notebook in Databricks and encodes them using the `urllib.parse.quote` function.
 
-        - It mounts an AWS S3 bucket with a specified name (`S3 Bucket Name`) into a desired mount location (`mnt/s3-bucket`) using `dbutils.fs.mount()`. You'll need to replace `AWS_S3_Bucket` with your chosen bucket name in the code. If successful, the code will return `True`, and you'll only need to perform this mount operation once to access the S3 bucket in Databricks.
+        - It mounts an AWS S3 bucket with a specified name (`S3 Bucket Name`) into a desired mount location (`mnt/s3-bucket`) using `dbutils.fs.mount()`. You need to replace `AWS_S3_Bucket` with your chosen bucket name in the code. If successful, the code will return `True`, and you'll only need to perform this mount operation once to access the S3 bucket in Databricks.
 
-        - It reads JSON files from the mounted S3 bucket and stores the contents as dataframes. Specifically, it generates three dataframes:
-            - `df_pin` for Pinterest post data.
-            - `df_geo` for geolocation data.
-            - `df_user` for user data.
-
-        > Note: The path to the JSON objects in your S3 bucket should match the structure seen in the file_location url: `topics/<UserID>.pin/partition=0/`
-
-**Optional:** To unmount the S3 bucket, run the following command:
-```python
-dbutils.fs.unmount("/mnt/s3_bucket")
-```
 
 ## Usage Instructions
 
@@ -308,11 +366,19 @@ dbutils.fs.unmount("/mnt/s3_bucket")
     - `geolocation_data` contains data about the geolocation of each Pinterest post found in pinterest_data 
     - `user_data` contains data about the user that has uploaded each post found in pinterest_data
 - `mount_s3_to_databricks.py`: Contains a script which needs to be run on databricks in order to mount the S3 bucket onto databricks and do further analysis.
+- `data_cleaning.py`: Contains a script that reads JSON files from the mounted S3 bucket, stores the contents as dataframes and performs cleaning operations.
+- `data_query.py`: Contains a script to query the cleaned data for useful information. The full list of task is shown above in [Additional Information](#additional-information) section
 
 ### Usage
 
-1. In the `user_posting_emulation.py` script, replace the `invoke_url` with your own url that you have saved previously.
-2. Run the script to begin emulating user postings and send the data to the S3 bucket where it is then available on Databricks for analysis.
+Once all the installation instructions has been followed and all the necesseary services has been set up, do the following. 
+
+1. In the `user_posting_emulation.py` script, replace the `invoke_url` with your own url that you have saved previously. Run the following command to send the data to the S3 bucket where it is then available on Databricks for analysis.
+
+```python
+python3 user_posting_emulation.py
+```
+2. Given that databricks has been set up and the S3 bucket has been mounted, upload the `data_cleaning.py` script followed by `data_query.py` in a notebook. Run the scripts in the order that they were upload.
 
 
 ## File Structure
@@ -320,9 +386,11 @@ dbutils.fs.unmount("/mnt/s3_bucket")
 |-- Pinterest Data Pipeline
 
     Local Machine
-    |-- user_posting_Emulation.py
     |-- README.md
+    |-- user_posting_Emulation.py
     |-- mount_s3_to_databricks.py
+    |-- data_cleaning.py
+    |-- data_query.py
 
     EC2 Instance
     |-- kafka_folder

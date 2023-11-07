@@ -1,4 +1,9 @@
-# Databricks notebook source- Checks what files have been uploaded
+# Databricks notebook source
+###################################################### MILESTONE 6: BATCH PROCESSING: DATABRICKS ##############################################################
+
+# COMMAND ----------
+
+# Check if the 'authentication_credentials.csv' file has been uploaded
 dbutils.fs.ls("/FileStore/tables/")
 
 # COMMAND ----------
@@ -43,36 +48,10 @@ ENCODED_SECRET_KEY = urllib.parse.quote(string=SECRET_KEY, safe="")
 
 # COMMAND ----------
 
+# Check if the s3 bucket is uploaded
 display(dbutils.fs.ls("/mnt/s3_bucket/../.."))
 
 # COMMAND ----------
 
-# File location and type
-file_type = "json"
-# Ask Spark to infer the schema
-infer_schema = "true"
-
-# Asterisk(*) indicates reading all the content of the specified file that have .json extension
-pin_file_location = "/mnt/s3_bucket/topics/0a3db223d459.pin/partition=0/*.json"
-geo_file_location = "/mnt/s3_bucket/topics/0a3db223d459.geo/partition=0/*.json"
-user_file_location = "/mnt/s3_bucket/topics/0a3db223d459.user/partition=0/*.json"
-
-# Function to read JSON data from a given file location in mounted S3 bucket and return dataframe
-def create_spark_dataframe(file_location):
-    dataframe = spark.read.format(file_type) \
-        .option("inferSchema", infer_schema) \
-        .load(file_location)
-    return dataframe
-
-df_pin = create_spark_dataframe(pin_file_location)
-df_geo = create_spark_dataframe(geo_file_location)
-df_user = create_spark_dataframe(user_file_location)
-
-# Display Spark dataframe to check its content
-display(df_pin)
-display(df_geo)
-display(df_user)
-
-# COMMAND ----------
-
-
+# To unmount the S3 bucket, run the following command:
+# dbutils.fs.unmount("/mnt/s3_bucket")
