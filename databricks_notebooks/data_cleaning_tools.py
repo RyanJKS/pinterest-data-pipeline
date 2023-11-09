@@ -1,40 +1,11 @@
 # Databricks notebook source
-###################################################### MILESTONE 7: BATCH PROCESSING: SPARK ON DATABRICKS - PART 1 ##############################################################
+# Script contains function to clean dataframes for "data_cleaning" and "stream_and_clean_kinesis_data" notebooks
 
 # COMMAND ----------
 
 # Import necessary libraries
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import *
-
-# COMMAND ----------
-
-# Create Dataframes from data in S3 bucket
-# File location and type
-file_type = "json"
-# Ask Spark to infer the schema
-infer_schema = "true"
-
-# Asterisk(*) indicates reading all the content of the specified file that have .json extension
-# Note: The path to the JSON objects in your S3 bucket should match the structure seen in the file_location url: `topics/<UserID>.pin/partition=0/`
-pin_file_location = "/mnt/s3_bucket/topics/0a3db223d459.pin/partition=0/*.json"
-geo_file_location = "/mnt/s3_bucket/topics/0a3db223d459.geo/partition=0/*.json"
-user_file_location = "/mnt/s3_bucket/topics/0a3db223d459.user/partition=0/*.json"
-
-# Function to read JSON data from a given file location in mounted S3 bucket and return dataframe
-def create_spark_dataframe(file_location):
-    dataframe = spark.read.format(file_type) \
-        .option("inferSchema", infer_schema) \
-        .load(file_location)
-    return dataframe
-
-df_pin = create_spark_dataframe(pin_file_location)
-df_geo = create_spark_dataframe(geo_file_location)
-df_user = create_spark_dataframe(user_file_location)
-
-# COMMAND ----------
-
-# Task 1: Clean the DataFrame that contains information about Pinterest posts
 
 # COMMAND ----------
 
@@ -91,12 +62,6 @@ def clean_df_pin(df_pin: DataFrame) -> DataFrame:
 
     return df_pin
 
-df_pin_cleaned = clean_df_pin(df_pin)
-
-# COMMAND ----------
-
-# Task 2: Clean the DataFrame that contains information about geolocation.
-
 # COMMAND ----------
 
 # Function to clean the geo DataFrame
@@ -108,16 +73,12 @@ def clean_df_geo(df_geo: DataFrame) -> DataFrame:
 
     df_geo = df_geo.withColumn("timestamp",to_timestamp(col("timestamp")))
 
+    df_geo = df_geo.withColumn("ind", col("ind").cast("int"))
+
     column_order = ["ind", "country", "coordinates", "timestamp"]
     df_geo = df_geo.select(column_order)
 
     return df_geo
-
-df_geo_cleaned = clean_df_geo(df_geo)
-
-# COMMAND ----------
-
-# Task 3: Clean the DataFrame that contains information about users.
 
 # COMMAND ----------
 
@@ -129,19 +90,13 @@ def clean_df_user(df_user: DataFrame) -> DataFrame:
 
     df_user = df_user.withColumn("date_joined", to_timestamp(col("date_joined")))
 
+    df_user = df_user.withColumn("ind", col("ind").cast("int"))
+    df_user = df_user.withColumn("age", col("age").cast("int"))
+
     column_order = ["ind", "user_name", "age", "date_joined"]
     df_user = df_user.select(column_order)
     
     return df_user
-
-df_user_cleaned = clean_df_user(df_user)
-
-# COMMAND ----------
-
-#  Register the DataFrame as a global temp view to access across notebooks
-df_pin_cleaned.createOrReplaceGlobalTempView("df_pin_temp_view")
-df_geo_cleaned.createOrReplaceGlobalTempView("df_geo_temp_view")
-df_user_cleaned.createOrReplaceGlobalTempView("df_user_temp_view")
 
 # COMMAND ----------
 

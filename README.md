@@ -10,6 +10,13 @@
 ## Project Description
 The Pinterest Data Pipeline project is designed to emulate the process of gathering and storing user posting data, similar to what platforms like Pinterest might do. The aim is to understand how data can be efficiently collected, processed, and stored in a cloud environment, specifically using AWS services. By diving into this project, I gained a hands-on experience with various AWS services and data processing tools which in turn gave me a taste of what it's like to work on real-world data engineering tasks.
 
+Below is a visual representation of the project's architecture:
+
+<div align="center">
+  <img src="/images/CloudPinterestPipeline.png" alt="CloudPinterestPipeline">
+</div>
+
+
 ### Project Aim:
 The primary goal of this project is to provide hands-on experience with setting up and managing a data pipeline. It offers insights into how large-scale applications like Pinterest handle vast amounts of data, ensuring it's processed efficiently and stored securely. The aim is to create a robust data pipeline that enables me to:
 
@@ -24,6 +31,8 @@ The primary goal of this project is to provide hands-on experience with setting 
 - **Analyze Data with Databricks:** Connect Databricks to my S3 bucket to perform batch data analysis on the collected Pinterest data.
 
 - **Orchestrate Workflows with MWAA:** Use Managed Workflows for Apache Airflow (MWAA) to orchestrate complex workflows using Directed Acyclic Graphs (DAGs), enhancing the automation and monitoring of the data pipeline.
+
+- **Integrate Kinesis Data Streams:** Expand the pipeline to include real-time data handling with AWS Kinesis Data Streams.
 
 ### What I learned:
 Through the development and implementation of this project, I have gained hands-on experience with several important concepts and tools used in the world of data engineering and cloud computing:
@@ -44,7 +53,9 @@ Through the development and implementation of this project, I have gained hands-
 
 - **Apache Airflow (MWAA):** I've learned to create and manage an Airflow environment, orchestrate workflows using DAGs, and integrate with Databricks for workload automation, which has significantly enhanced my understanding of workflow management in cloud environments.
 
-#### Additional Information
+- **AWS Kinesis Data Streams:** Acquired skills in real-time data streaming and management using AWS Kinesis.
+
+#### Databricks Cleaning and Analysis
 In this project, data was cleaned in **Databricks** using **Spark** and then using **SQL** queries to make useful analyis. Below are the full list of tasks and a few examples that were done in order to acquire useful information.
 
 > Note: Task 1-3 was for cleaning the data and more details can be found in `data_cleaning.py` file
@@ -359,37 +370,46 @@ The figure below shows how it should be set up.
     - This code within the file serves the following purposes:
         - It reads AWS access keys from a notebook in Databricks and encodes them using the `urllib.parse.quote` function.
 
-        - It mounts an AWS S3 bucket with a specified name (`S3 Bucket Name`) into a desired mount location (`mnt/s3-bucket`) using `dbutils.fs.mount()`. You need to replace `AWS_S3_Bucket` with your chosen bucket name in the code. If successful, the code will return `True`, and you'll only need to perform this mount operation once to access the S3 bucket in Databricks.
+        - It mounts an AWS S3 bucket with a specified name (`S3 Bucket Name`) into a desired mount location (`mnt/s3-bucket`) using `dbutils.fs.mount()`. You need to replace `AWS_S3_Bucket` with your chosen bucket name in the code. If successful, the code will return `True`. You will only need to perform this mount operation once to access the S3 bucket in Databricks.
+
 
 ### Managed Workflows for Apache Airflow (MWAA)
-Create an Airflow enviroment that orcestrates workflows using **Directed Acyclic Graphs (DAGs)** along with python requirements and plugins which reside an S3 bucket.
+Create an Airflow environment to orchestrate complex workflows using **Directed Acyclic Graphs (DAGs)**. These workflows will manage tasks like data processing, analysis, and storage.
 
-1. Create an S3 bucket called `mwaa-dags-bucket` which is configured as shown below and create a folder called `dags` in this bucket.
-    - Set the bucket to the same region as defined previously `us-east-1`
-    - Block all public access
-    - Bucket Versioning enabled.
-> Make a note of the S3 bucket URI
+Step 1: S3 Bucket Configuration for MWAA
+- Create an S3 bucket named `mwaa-dags-bucket` and create a folder called `dags` in this bucket. Ensure the following settings:
+    - Region set to `us-east-1`.
+    - Public access blocked for security.
+    - Enable bucket versioning to keep track of and manage deployments.
 
-2. Create a MWAA Environment called `Databricks-Airflow-env` in AWS console and paste the S3 bucket URI and `dags` folder URI when prompted.
-    - **Networking Section**: Choose "Create MWAA VPC" to automatically create a VPC with its corresponding subnets.
-    - **Web server Access Mode** for Apache Airflow: Choose private network.
-    - **Security Group**: Chose "Create new security group"
-    - **Enviroment**: Select appropriate enviroment size that can support the workload.
+> Note: Make a note of the S3 bucket's URI for later use.
 
-3. Access Airflow UI after creating the enviroment on the AWS Console by clicking on **Open Airflow UI**. You will then be able to see all the `dags` file that are in the S3 bucket in the UI.
+Step 2: MWAA Environment Setup
+- In the AWS console, initiate the creation of an MWAA environment called Databricks-Airflow-env.
+    - **Networking:** Choose "Create MWAA VPC" option for automatic VPC and subnet creation.
+    - **Web Server Access:** Set the webserver access mode to a private network for enhanced security.
+    - **Security:** Choose "Create new security group" to define security rules specific to this environment.
+    - **Environment Size:** Select a size that can comfortably sustain your projected workload.
 
-4. Create a connection between MWAA and Databricks to orchestrate workloads using **Job API**
-    - Create an API Access token in Databricks and make a note of this token which will be denoted as `<token_id>`.
-    - Open the Airflow UI from the MWAA environment. Navigate to Admin and then select Connections.
-    - Select **databricks_default** and **Edit record** by adding the following:
-        - **Host**: `<databricks_account_url>`
-        - **Extra**: Add the following dictionary
-        ```javascript
+Step 3: Airflow UI Access
+- Post-environment creation, access the Airflow UI through the AWS Console using the "Open Airflow UI" button. This interface will display all DAGs present in the mwaa-dags-bucket.
+
+Step 4: Integration with Databricks
+- For orchestrating Databricks workloads:
+    - Generate an API access token in Databricks Create and make a note of this token which will be denoted as `<token_id>`.
+    - Within the Airflow UI, navigate to Admin > Connections.
+    - Edit the `databricks_default` connection:
+        - **Host:** Input your Databricks account URL.
+        - **Extra:** Include the following
+        ```json
             {"token": "<token_id>", "host": "<url_from_host_column>"}
         ```
-        - **Connection Type**: Select Databricks from drop-down menu.
 
-**Optional:** If the connection type, "Databricks". is not available, you will need to install additional packages using *Airflow Provider Package*. Create and upload `requirements.txt` file in the S3 `mwaa-dags-bucket` which consists of the python dependency in the MWAA environemnet.
+    - **Connection Type:** Choose 'Databricks' from the dropdown.
+
+Step 5: Airflow Provider Package (If Required)
+
+If the connection type, "Databricks", is not available, you will need to install additional packages using *Airflow Provider Package*. Create and upload `requirements.txt` file in the S3 `mwaa-dags-bucket` which consists of the python dependency in the MWAA environemnet.
 
 1. The `requirements.txt` should contain the following:
 ```bash
@@ -400,7 +420,7 @@ apache-airflow-providers-mysql==5.1.1
 apache-airflow[databricks]
 ```
 
-2. To test if the created `requirements.txt` file works correctly, before uploading it to the MWAA environment, you can build a **docker** image locally  using cli on your machine. This allows you to run a local Airflow environment to develop/test DAGs, custom plugins and dependencies before deploying them to the cloud. Follow the commands below for testing:
+2. In order to test if the `requirements.txt` file works correctly before uploading it to the MWAA environment, you can build a **docker** image locally  using cli on your machine. This allows you to run a local Airflow environment to develop/test DAGs, custom plugins and dependencies before deploying them to the cloud. Follow the commands below for testing:
 
     - Clone the `aws-mwaa-local-runner` repo, navigate to the `aws-mwaa-local-runner` folder and build a docker image
     ```bash
@@ -414,7 +434,7 @@ apache-airflow[databricks]
     ```bash
     ./mwaa-local-env start
     ```
-    - Navigate to `requirements/` where you will find an intial `requirements.txt` file where will you need to add the following:
+    - Navigate to `requirements/` where you will find an intial `requirements.txt` file. You need to add the following in that file:
     ```bash
     apache-airflow[databricks]
     ```
@@ -427,6 +447,94 @@ apache-airflow[databricks]
 3. Navigate to the MWAA console and select your **Environment**. Once you're on the environment page select **Edit**. Under the DAG code in Amazon S3, update your Requirements file field by selecting the path corresponding to the `requirements.txt` file you have just uploaded to the S3 bucket.
 
 
+### AWS Kinesis Data Streams
+
+Step 1: Create Data Streams
+- Navigate to the Kinesis console and create three data streams with the specified names:
+    - `streaming-<UserID>-pin`
+    - `streaming-<UserID>-geo`
+    - `streaming-<UserID>-user`
+
+Step 2: Set Up IAM Role
+- Create an IAM role (`<UserID-kinesis-role>`) with **AmazonKinesisFullAccess** policy and set up trust relationships. Refer to the trust relationship as shown below.
+
+<div align="center">
+  <img src="/images/kinesis-role-relationships.png" alt="Kinesis_Role_Relationships">
+</div>
+
+> Make a note of the ARN of this role which will be denoted as `<awsKinesisARN>`
+
+Step 3: Integrate API Gateway with Kinesis
+- Select your previously created REST API in [API Gateway](#api-gateway)and create a resource named `streams` at path "/" and leave the rest as default settings.
+
+Step 4: Defining Methods
+- Add a 'GET' method with an **Action Name**, `ListStreams`, to the `streams` resource with Kinesis integration. Replace the `ARN` at **Execution role** with the your `<awsKinesisARN>`. The image below shows the setup configuration for a method.
+
+<div align="center">
+  <img src="/images/kinesis-method.png" alt="Kinesis_GET_Method">
+</div>
+
+- Configure the **Integration Request** with the necessary **headers** and **mapping template**. 
+- The **headers** should be defined as shown below.
+
+<div align="center">
+  <img src="/images/api-headers.png" alt="Kinesis_GET_Method">
+</div>
+
+- The **Mapping Template** should be defined as shown below.
+
+<div align="center">
+  <img src="/images/mapping-template.png" alt="Mapping_Template">
+</div>
+
+Step 5: Define Stream-Specific Methods
+- Under the `streams` resource, create a `{stream-name}` resource.
+- Set up 'GET', 'POST', and 'DELETE' methods with **Action Name** `DescribeStream`, `CreateStream`, and `DeleteStream`, respectively. Refer back to Step 4 for method setup details. Further adjustments are needed when creating the mapping template and they are shown below.
+    - For 'GET' and 'DELETE', insert this in the template body:
+    ```json
+    { "StreamName": "$input.params('stream-name')" }
+    ```
+    - For 'POST', insert this in the template body:
+    ```json
+    {
+    "ShardCount": #if($input.path('$.ShardCount') == '') 5 #else $input.path('$.ShardCount') #end,
+    "StreamName": "$input.params('stream-name')"
+    }
+    ```
+
+Step 6: Add Record Handling Methods
+- Under `{stream-name}` resource, create `record` and `records` resources.
+- Implement 'PUT' methods for both, using the **Action Name** `PutRecord` and `PutRecords`. Refer back to Step 4 for the method setup pattern. Further adjustments are needed when creating the mapping template and they are shown below.
+    - For `record` resource's method, insert this in the template body.
+    ```json
+    {
+        "StreamName": "$input.params('stream-name')",
+        "Data": "$util.base64Encode($input.json('$.Data'))",
+        "PartitionKey": "$input.path('$.PartitionKey')"
+    }
+    ```
+    - For `records` resource's method, insert this in the template body.
+    ```json
+    {
+        "StreamName": "$input.params('stream-name')",
+        "Records": [
+        #foreach($elem in $input.path('$.records'))
+            {
+                "Data": "$util.base64Encode($elem.data)",
+                "PartitionKey": "$elem.partition-key"
+            }#if($foreach.hasNext),#end
+            #end
+        ]
+    }
+    ```
+
+Step 7: Deploy and Verify API Structure
+- Deploy the API to apply and activate the changes. Confirm the API structure is correct and matches the expected setup as shown below.
+
+<div align="center">
+  <img src="/images/api-structure.png" alt="API_Structure">
+</div>
+
 
 ## Usage Instructions
 
@@ -435,20 +543,61 @@ apache-airflow[databricks]
     - `pinterest_data` contains data about posts being updated to Pinterest
     - `geolocation_data` contains data about the geolocation of each Pinterest post found in pinterest_data 
     - `user_data` contains data about the user that has uploaded each post found in pinterest_data
+- `user_posting_emulation_streaming.py`: Contains a script that streams real-time data to AWS Kinesis
 - `mount_s3_to_databricks.py`: Contains a script which needs to be run on databricks in order to mount the S3 bucket onto databricks and do further analysis.
 - `data_cleaning.py`: Contains a script that reads JSON files from the mounted S3 bucket, stores the contents as dataframes and performs cleaning operations.
+- `data_cleaning_tools.py`: Contains a script of functions used in `data_cleaning.py` and `stream_and_clean_kinesis_data.py` to clean dataframes.
+- `stream_and_clean_kinesis_data.py`: Contains a script to read real-time kinesis data, cleans the data and saves in delta table on databricks.
 - `data_query.py`: Contains a script to query the cleaned data for useful information. The full list of task is shown above in [Additional Information](#additional-information) section
+- `0a3db223d459_dag.py`: A Dag file which runs the `data_cleaning` notebook file on databricks daily.
+
 
 ### Usage
 
-Once all the installation instructions has been followed and all the necesseary services has been set up, do the following. 
+After completing the installation and setup of all required services, proceed with the following steps to use the data pipeline:
 
-1. In the `user_posting_emulation.py` script, replace the `invoke_url` with your own url that you have saved previously. Run the following command to send the data to the S3 bucket where it is then available on Databricks for analysis.
+**Data Emulation and Streaming to S3:**
+1. Script Configuration: In the `user_posting_emulation.py` script, replace the `invoke_url` with the url created in the **API Gateway**. This links the script to your API endpoint.
+
+2. Starting the REST Proxy: Ensure that your Kafka REST Proxy is active on your EC2 instance. Refer to the [Kafka REST Proxy](#kafka-rest-proxy) section for details on starting the proxy.
+
+3. Run the script: Execute the script to send data to your S3 bucket, which Databricks will use for analysis. Use the command line to run the script:
 
 ```python
 python3 user_posting_emulation.py
 ```
-2. Given that databricks has been set up and the S3 bucket has been mounted, upload the `data_cleaning.py` script followed by `data_query.py` in a notebook. Run the scripts in the order that they were upload.
+If the code outputs a status code "200", it indicates successful data transmission to the S3 bucket. You can verify in the AWS S3 Console under the `<user-UserID-bucket>` bucket.
+
+**Data Processing and Analysis with Databricks:**
+1. Script Upload: In your Databricks workspace, upload the scripts located within the `databricks_notebook` folder.
+
+2. Execution Order: Execute the notebooks in the following sequence for data processing:
+
+    - `data_cleaning_tools.py`: To get the data cleaning utilities.
+    - `data_cleaning.py`: To apply the cleaning process to the datasets.
+    - `data_query.py`: To perform various data analyses and view the results.
+
+If all the notebook ran successfully, it will show the anticipated results from the `data_query.py` notebook for each of the queries.
+
+**Workflow Orchestration with MWAA:**
+1. DAG Deployment: Transfer your DAG file, such as `0a3db223d459_dag.py`, to the `mwaa-dags-bucket/dags` folder in your S3 bucket. This will synchronize the file with the Airflow UI.
+
+2. Airflow UI Interaction: Access the Airflow UI from the MWAA section of the AWS console. Here, locate and unpause your DAG to initiate the workflow based on its schedule and configuration.
+
+> Note: Customize the DAG file to fit your environment, paying particular attention to parameters like **notebook_path** and **existing_cluster_id**.
+
+**Real-Time Data Handling with Kinesis:**
+1. Kinesis Streaming Script: Modify the `invoke_url` in the `user_posting_emulation_streaming.py` script, similarly to how you updated the `user_posting_emulation.py` script.
+
+2. Run the script: Run the script on your local machine to begin streaming data to your Kinesis data stream:
+
+```python
+python3 user_posting_emulation_streaming.py
+```
+
+3. Databricks Streaming Notebook: On Databricks, run the `stream_and_clean_kinesis_data.py`` notebook. This will process and display the real-time data stream, cleaning it and storing the output in Delta tables for subsequent use.
+
+By following these detailed steps, you can effectively emulate data generation, process and analyze data in batch and real-time, and orchestrate complex workflows using the comprehensive data pipeline you've established.
 
 
 ## File Structure
@@ -456,11 +605,18 @@ python3 user_posting_emulation.py
 |-- Pinterest Data Pipeline
 
     Local Machine
+    |-- dags
+        |-- 0a3db223d459_dag.py
+    |-- databricks_notebooks
+        |-- data_cleaning_tools.py
+        |-- data_cleaning.py
+        |-- data_query.py
+        |-- mount_s3_to_databricks.py
+        |-- stream_and_clean_kinesis_data.py
     |-- README.md
-    |-- user_posting_Emulation.py
-    |-- mount_s3_to_databricks.py
-    |-- data_cleaning.py
-    |-- data_query.py
+    |-- user_posting_emulation_streaming.py
+    |-- user_posting_emulation.py
+ 
 
     EC2 Instance
     |-- kafka_folder
