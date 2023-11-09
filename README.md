@@ -56,12 +56,13 @@ Through the development and implementation of this project, I have gained hands-
 - **AWS Kinesis Data Streams:** Acquired skills in real-time data streaming and management using AWS Kinesis.
 
 #### Databricks Cleaning and Analysis
-In this project, data was cleaned in **Databricks** using **Spark** and then using **SQL** queries to make useful analyis. Below are the full list of tasks and a few examples that were done in order to acquire useful information.
+In this project, data cleaning was performed in **Databricks** using **Spark**, followed by the application of **SQL** queries for insightful analysis. Here is a list of tasks executed, along with a few examples of the extracted information.
 
 > Note: Task 1-3 was for cleaning the data and more details can be found in `data_cleaning.py` file
 
 - Task 4: Find the most popular category in each country
 - Task 5: Find which was the most popular category each year
+
 Query: 
 ```sql
 SELECT
@@ -181,7 +182,7 @@ sudo yum install java-1.8.0
 wget https://archive.apache.org/dist/kafka/2.8.1/kafka_2.12-2.8.1.tgz
 tar -xzf kafka_2.12-2.8.1.tgz
 ```
-2. Install the ==IAM MSK authentication package== in the `kafka_2.12-2.8.1/libs` on your client EC2 machine. This package is necessary to connect to MSK clusters that require IAM authentication.
+2. Install the <mark>IAM MSK authentication package</mark> in the `kafka_2.12-2.8.1/libs` on your client EC2 machine. This package is necessary to connect to MSK clusters that require IAM authentication.
 
 ```bash
 wget https://github.com/aws/aws-msk-iam-auth/releases/download/v1.1.5/aws-msk-iam-auth-1.1.5-all.jar
@@ -235,7 +236,7 @@ Topic names:
 
 1. Create a custom plugin, which will contain the code that defines the logic of our connector. The name should be in this format `<UserID>-plugin`
 
-- Connect to EC2 instance and download the ==Confluent.io Amazon S3 Connector== in a folder called `kafka-connect-s3`.
+- Connect to EC2 instance and download the <mark>Confluent.io Amazon S3 Connector</mark> in a folder called `kafka-connect-s3`.
 - Copy the files in the S3 bucket. This plugin will act as a sink connector that exports data from Kafka topics to S3 objects in either JSON, Avro or Bytes format.
 
 ```bash
@@ -305,7 +306,7 @@ The figure below shows how it should be set up.
 ### Kafka REST Proxy
 In order to consume data using MSK from the API created, we will need to download some additional packages on a client EC2 machine, that will be used to communicate with the MSK cluster.
 
-1. Download the ==Confluent.io Amazon S3 Connector package== to consume data using MSK from the API, on the EC2 instance, using the command below. More information about this package can be found [here](https://github.com/aws/aws-msk-iam-auth).
+1. Download the <mark>Confluent.io Amazon S3 Connector package</mark> to consume data using MSK from the API, on the EC2 instance, using the command below. More information about this package can be found [here](https://github.com/aws/aws-msk-iam-auth).
 
 ```bash
 sudo wget https://packages.confluent.io/archive/7.2/confluent-7.2.0.tar.gz
@@ -495,7 +496,7 @@ Step 5: Define Stream-Specific Methods
     { "StreamName": "$input.params('stream-name')" }
     ```
     - For 'POST', insert this in the template body:
-    ```json
+    ```java
     {
     "ShardCount": #if($input.path('$.ShardCount') == '') 5 #else $input.path('$.ShardCount') #end,
     "StreamName": "$input.params('stream-name')"
@@ -514,7 +515,7 @@ Step 6: Add Record Handling Methods
     }
     ```
     - For `records` resource's method, insert this in the template body.
-    ```json
+    ```java
     {
         "StreamName": "$input.params('stream-name')",
         "Records": [
