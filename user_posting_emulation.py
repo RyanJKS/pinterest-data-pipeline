@@ -12,8 +12,14 @@ import datetime
 random.seed(100)
 
 class AWSDBConnector:
+    """
+    A connector class to create a connection to an AWS RDS instance.
+    """
 
     def __init__(self):
+        """
+        Initializes the database connection parameters.
+        """
         self.HOST = "pinterestdbreadonly.cq2e8zno855e.eu-west-1.rds.amazonaws.com"
         self.USER = 'project_user'
         self.PASSWORD = ':t%;yCY3Yjg'
@@ -21,6 +27,12 @@ class AWSDBConnector:
         self.PORT = 3306
         
     def create_db_connector(self):
+        """
+        Creates a database engine using SQLAlchemy.
+        
+        Returns:
+            engine: A SQLAlchemy engine instance connected to the database.
+        """
         engine = sqlalchemy.create_engine(f"mysql+pymysql://{self.USER}:{self.PASSWORD}@{self.HOST}:{self.PORT}/{self.DATABASE}?charset=utf8mb4")
         return engine
 
@@ -28,6 +40,15 @@ class AWSDBConnector:
 new_connector = AWSDBConnector()
 
 def datetime_converter(data):
+    """
+    Converts datetime objects to ISO format, and recursively applies to lists and dictionaries.
+    
+    Args:
+        data (datetime|list|dict): The data to convert.
+        
+    Returns:
+        The data in a format that can be serialized to JSON.
+    """
     if isinstance(data, datetime.datetime):
         return data.isoformat()
     elif isinstance(data, dict):
