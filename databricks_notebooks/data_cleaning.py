@@ -50,11 +50,7 @@ df_user_cleaned = clean_df_user(df_user)
 
 # COMMAND ----------
 
-#  Register the DataFrame as a global temp view to access across notebooks
-df_pin_cleaned.createOrReplaceGlobalTempView("df_pin_temp_view")
-df_geo_cleaned.createOrReplaceGlobalTempView("df_geo_temp_view")
-df_user_cleaned.createOrReplaceGlobalTempView("df_user_temp_view")
-
-# COMMAND ----------
-
-
+# Save cleaned dataframes in parquet table for queries in 'data_query' notebook
+df_pin_cleaned.write.mode('overwrite').parquet("/mnt/0a3db223d459_storage/df_pin")
+df_geo_cleaned.write.mode('overwrite').parquet("/mnt/0a3db223d459_storage/df_geo")
+df_user_cleaned.write.mode('overwrite').parquet("/mnt/0a3db223d459_storage/df_user")

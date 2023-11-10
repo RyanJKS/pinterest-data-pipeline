@@ -197,7 +197,7 @@ sudo yum install java-1.8.0
 wget https://archive.apache.org/dist/kafka/2.8.1/kafka_2.12-2.8.1.tgz
 tar -xzf kafka_2.12-2.8.1.tgz
 ```
-Step 2: Install the **IAM MSK authentication package** in the `kafka_2.12-2.8.1/libs` on your EC2 machine. This package is necessary to connect to MSK clusters that require IAM authentication.
+Step 2: Install the **IAM MSK authentication package** in `kafka_2.12-2.8.1/libs` folder on your EC2 machine. This package is necessary to connect to MSK clusters that require IAM authentication.
 
 ```bash
 wget https://github.com/aws/aws-msk-iam-auth/releases/download/v1.1.5/aws-msk-iam-auth-1.1.5-all.jar
@@ -377,7 +377,7 @@ client.sasl.client.callback.handler.class = software.amazon.msk.auth.iam.IAMClie
 ```
 > Note: Replace the `<ZookeeperString>, <BoostrapServerString> and <awsEC2RoleARN>` with the appropriate strings.
 
-3. Start the REST proxy.
+Step 3: Start the REST proxy.
 - Navigate to `confluent-7.2.0/bin` and run the following command:
 
 ```bash
@@ -389,7 +389,6 @@ If everything works so far, you should see the **INFO Server started, listening 
 Step 1: Create a Databricks account.
 Step 2: Create a cluster.
 - Navigate to **Compute** section and create a personal cluster with the details below.
-
 
 <div align="center">
   <img src="/images/databricks-compute-config.png" alt="Databricks_Compute_Configure">
@@ -437,7 +436,7 @@ Step 3: Airflow UI Access
 
 Step 4: Integration with Databricks
 - For orchestrating Databricks workloads:
-    - Generate an API access token in Databricks Create and make a note of this token which will be denoted as `<token_id>`.
+    - Generate an API access token in Databricks and make a note of this token which will be denoted as `<token_id>`.
     - Within the Airflow UI, navigate to Admin > Connections.
     - Edit the `databricks_default` connection:
         - **Host:** Input your Databricks account URL.
@@ -483,7 +482,7 @@ apache-airflow[databricks]
     ```bash
     ./mwaa-local-env test-requirements
     ```
-    - If everything ran successfully, you can now upload the `requirements.txt` file to the MWAA environment.
+    - If everything ran successfully, you can now upload the `requirements.txt` file to the MWAA environment, which is the `mwaa-dags-bucket`.
 
 3. Navigate to the MWAA console and select your **Environment**. Once you're on the environment page select **Edit**. Under the DAG code in Amazon S3, update your Requirements file field by selecting the path corresponding to the `requirements.txt` file you have just uploaded to the S3 bucket.
 
@@ -675,4 +674,4 @@ By following these detailed steps, you can effectively emulate data generation, 
 
 
 ## License Information
-This project is owned by AiCore and was part of an immersive program with specialisation, Data Engineering. AiCore is a specialist ai & data career accelerator from which I completed several industry-level projects to gain vital experience and be qualified in the use of several technologies.
+This project is owned by AiCore and was part of an immersive program with specialisation, Data Engineering. AiCore is a specialist AI & Data career accelerator from which I completed several industry-level projects to gain vital experience and be qualified in the use of several technologies.

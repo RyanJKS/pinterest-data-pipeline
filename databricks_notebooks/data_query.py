@@ -3,10 +3,17 @@
 
 # COMMAND ----------
 
-# Access the cleaned dataframes using global temp views previously defined in "data_cleaning" notebook
-df_pin_cleaned = spark.read.table("global_temp.df_pin_temp_view")
-df_geo_cleaned = spark.read.table("global_temp.df_geo_temp_view")
-df_user_cleaned = spark.read.table("global_temp.df_user_temp_view")
+# Reading the saved parquet files from 'data_cleaning' notebook into dataframes
+df_pin = spark.read.parquet("/mnt/0a3db223d459_storage/df_pin")
+df_geo = spark.read.parquet("/mnt/0a3db223d459_storage/df_geo")
+df_user = spark.read.parquet("/mnt/0a3db223d459_storage/df_user")
+
+# COMMAND ----------
+
+# Creating temporary views to run SQL queries
+df_pin.createOrReplaceTempView("df_pin_temp_view")
+df_geo.createOrReplaceTempView("df_geo_temp_view")
+df_user.createOrReplaceTempView("df_user_temp_view")
 
 # COMMAND ----------
 
@@ -21,8 +28,8 @@ task4_query =   """
                         geo.country,
                         pin.category,
                         COUNT(*) as category_count
-                    FROM global_temp.df_geo_temp_view AS geo
-                    JOIN global_temp.df_pin_temp_view AS pin 
+                    FROM df_geo_temp_view AS geo
+                    JOIN df_pin_temp_view AS pin 
                         ON geo.ind = pin.ind
                     GROUP BY 
                         geo.country, pin.category
@@ -60,8 +67,8 @@ task5_query =   """
                     YEAR(geo.timestamp) AS post_year,
                     pin.category,
                     COUNT(*) AS category_count
-                FROM global_temp.df_geo_temp_view AS geo
-                JOIN global_temp.df_pin_temp_view AS pin
+                FROM df_geo_temp_view AS geo
+                JOIN df_pin_temp_view AS pin
                     ON geo.ind = pin.ind
                 WHERE
                     YEAR(geo.timestamp) BETWEEN 2018 AND 2022
@@ -81,13 +88,13 @@ display(spark.sql(task5_query))
 # Part 1: For each country find the user with the most followers.
 task6_part1_query = """
                     WITH RankedUsers AS (
-                        SELECT
+                        SELECT DISTINCT
                             g.country,
                             p.poster_name,
                             p.follower_count,
                             RANK() OVER (PARTITION BY g.country ORDER BY p.follower_count DESC) as rank
-                        FROM global_temp.df_geo_temp_view g
-                        JOIN global_temp.df_pin_temp_view p ON g.ind = p.ind
+                        FROM df_geo_temp_view g
+                        JOIN df_pin_temp_view p ON g.ind = p.ind
                     )
 
                     SELECT
@@ -128,8 +135,8 @@ task7_query =   """
                             WHEN users.age > 50 THEN '50+'
                         END AS age_group,
                         pin.category
-                    FROM global_temp.df_user_temp_view AS users
-                    JOIN global_temp.df_pin_temp_view AS pin 
+                    FROM df_user_temp_view AS users
+                    JOIN df_pin_temp_view AS pin 
                         ON users.ind = pin.ind
                 ),
                 CategoryCounts AS (
@@ -174,8 +181,8 @@ task8_query =   """
                             WHEN users.age > 50 THEN '50+'
                         END AS age_group,
                         pin.follower_count
-                    FROM global_temp.df_user_temp_view AS users
-                    JOIN global_temp.df_pin_temp_view AS pin 
+                    FROM df_user_temp_view AS users
+                    JOIN df_pin_temp_view AS pin 
                         ON users.ind = pin.ind
                 )
                 SELECT
@@ -198,7 +205,7 @@ task9_query="""
             SELECT
                 YEAR(date_joined) AS post_year,
                 COUNT(*) AS number_users_joined
-            FROM global_temp.df_user_temp_view
+            FROM df_user_temp_view
             WHERE 
                 YEAR(date_joined) BETWEEN 2015 AND 2020
             GROUP BY
@@ -219,8 +226,8 @@ task10_query =  """
                 SELECT
                     YEAR(users.date_joined) AS post_year,
                     percentile_approx(pin.follower_count, 0.5) AS median_follower_count
-                FROM global_temp.df_user_temp_view AS users
-                JOIN global_temp.df_pin_temp_view AS pin
+                FROM df_user_temp_view AS users
+                JOIN df_pin_temp_view AS pin
                     ON users.ind = pin.ind
                 WHERE
                     YEAR(users.date_joined) BETWEEN 2015 AND 2020
@@ -246,8 +253,8 @@ task11_query =  """
                     END AS age_group,
                     YEAR(users.date_joined) AS post_year,
                     percentile_approx(pin.follower_count, 0.5) AS median_follower_count
-                FROM global_temp.df_user_temp_view AS users
-                JOIN global_temp.df_pin_temp_view AS pin 
+                FROM df_user_temp_view AS users
+                JOIN df_pin_temp_view AS pin 
                     ON users.ind = pin.ind
                 WHERE
                     YEAR(users.date_joined) BETWEEN 2015 AND 2020
