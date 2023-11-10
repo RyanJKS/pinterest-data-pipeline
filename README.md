@@ -163,7 +163,7 @@ Step 4: Configure EC2 client to use AWS IAM for MSK Cluster Authentication
 - The trust policy should be the same as shown below:
 
 <div align="center">
-  <img src="/images/ec2-trust-polic-iam.png" alt="EC2_Trust_Policy_IAM">
+  <img src="/images/ec2-trust-policy-iam.png" alt="EC2_Trust_Policy_IAM">
 </div>
 
 > Note: These steps are crucial in order to allow IAM authentication to the MSK cluster.
