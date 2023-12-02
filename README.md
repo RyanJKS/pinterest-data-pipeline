@@ -67,8 +67,8 @@ SELECT
     YEAR(geo.timestamp) AS post_year,
     pin.category,
     COUNT(*) AS category_count
-FROM global_temp.df_geo_temp_view AS geo
-JOIN global_temp.df_pin_temp_view AS pin
+FROM df_geo_temp_view AS geo
+JOIN df_pin_temp_view AS pin
     ON geo.ind = pin.ind
 WHERE
     YEAR(geo.timestamp) BETWEEN 2018 AND 2022
@@ -99,8 +99,8 @@ WITH AgeGroupCategories AS (
             WHEN users.age > 50 THEN '50+'
         END AS age_group,
         pin.follower_count
-    FROM global_temp.df_user_temp_view AS users
-    JOIN global_temp.df_pin_temp_view AS pin 
+    FROM df_user_temp_view AS users
+    JOIN df_pin_temp_view AS pin 
         ON users.ind = pin.ind
 )
 SELECT
@@ -154,7 +154,6 @@ Step 2: VPC Setup
 
 Step 3: EC2 Instance Initialisation
 - Create an EC2 instance within the subnet created and save the `.pem` file after creation on your local machine. This file can also be retrieved on the AWS Console.
-- 
 
 Step 4: Configure EC2 client to use AWS IAM for MSK Cluster Authentication
 - Navigate to the IAM console and under “Roles”, select recently created role.
@@ -309,7 +308,7 @@ s3.bucket.name=<user-<UserID>-bucket>
 After creating the plugin-connector pair, data passing through the IAM authenticated cluster, will be automatically stored in the designated S3 bucket.
 
 ### API Gateway
-Create an API in order to stream data from the `user_posting_emulation.py` script to MSK cluster and then store the data in the S3 bucket.
+Create an API in order to stream data from the `batch_streaming.py` script to MSK cluster and then store the data in the S3 bucket.
 
 Step 1: REST API Creation
 -  Navigate to API Gateway on AWS console and create an API of type **REST API**.
@@ -317,7 +316,7 @@ Step 1: REST API Creation
 Step 2: Create Resource
 
 This allows you to build a PROXY integration for your API. 
-- Navigate to your created api and create a resouce with the settings shown below. This resouce will allow **PROXY** integration.
+- Navigate to your created API and create a resouce with the settings shown below. This resouce will allow **PROXY** integration.
 
 <div align="center">
   <img src="/images/api-create-resource.png" alt="API_Resource">
@@ -401,7 +400,8 @@ Step 4: IAM Authentication Credentials in Databricks
     - Upload the file on Databricks.
 
 Step 5: Mount S3 bucket
-- Run the code found in `mount_s3_to_databricks.py` in a notebook in databricks.
+- Run the code in the `access_keys.ipynb` in a databricks notebook to get the keys from the `authentication_credentials.csv` file that was uploaded.
+- Run the code found in `mount_s3_to_databricks.ipynb`.
     
 - This script does the following purposes:
     - It reads AWS access keys from a file specifically called `authentication_credentials.csv`.
@@ -579,16 +579,17 @@ Step 7: Deploy and Verify API Structure
 ## Usage Instructions
 
 ### Key Scripts
-- `user_posting_emulation.py`: Contains a script that extracts pinterest data from MySQL database and uploads it to an S3 bucket though an API Gateway that goes through an MSK cluster on EC2 instance. The data sent are as follows:
+- `batch_streaming.py`: Contains a script that extracts pinterest data from MySQL database and uploads it to an S3 bucket though an API Gateway that goes through an MSK cluster on EC2 instance. The data sent are as follows:
     - `pinterest_data` contains data about posts being updated to Pinterest
     - `geolocation_data` contains data about the geolocation of each Pinterest post found in pinterest_data 
     - `user_data` contains data about the user that has uploaded each post found in pinterest_data
-- `user_posting_emulation_streaming.py`: Contains a script that streams real-time data to AWS Kinesis
-- `mount_s3_to_databricks.py`: Contains a script which needs to be run on databricks in order to mount the S3 bucket onto databricks and do further analysis.
-- `data_cleaning.py`: Contains a script that reads JSON files from the mounted S3 bucket, stores the contents as dataframes and performs cleaning operations.
-- `data_cleaning_tools.py`: Contains a script of functions used in `data_cleaning.py` and `stream_and_clean_kinesis_data.py` to clean dataframes.
-- `stream_and_clean_kinesis_data.py`: Contains a script to read real-time kinesis data, cleans the data and saves in delta table on databricks.
-- `data_query.py`: Contains a script to query the cleaned data for useful information. The full list of task is shown above in [Additional Information](#additional-information) section
+- `kinesis_streaming.py`: Contains a script that streams real-time data to AWS Kinesis
+- `access_keys.ipynb`: Contains a script to get the access and secret keys from the `authentication_credentials.csv` file that was previously uploaded on databricks.
+- `mount_s3_to_databricks.ipynb`: Contains a script which needs to be run on databricks in order to mount the S3 bucket onto databricks and do further analysis.
+- `data_cleaning.ipynb`: Contains a script that reads JSON files from the mounted S3 bucket, stores the contents as dataframes and performs cleaning operations.
+- `data_cleaning_tools.ipynb`: Contains a script of functions used in `data_cleaning.py` and `stream_and_clean_kinesis_data.py` to clean dataframes.
+- `stream_and_clean_kinesis_data.ipynb`: Contains a script to read real-time kinesis data, cleans the data and saves in delta table on databricks.
+- `data_sql_query.ipynb`: Contains a script to query the cleaned data for useful information. The full list of task is shown above in [Additional Information](#additional-information) section
 - `0a3db223d459_dag.py`: A Dag file which runs the `data_cleaning` notebook file on databricks daily.
 
 
@@ -597,14 +598,14 @@ Step 7: Deploy and Verify API Structure
 After completing the installation and setup of all required services, proceed with the following steps to use the data pipeline:
 
 **Data Emulation and Streaming to S3:**
-1. Script Configuration: In the `user_posting_emulation.py` script, replace the `invoke_url` with the url created in the **API Gateway**. This links the script to your API endpoint.
+1. Script Configuration: In the `batch_streaming.py` script, replace the `invoke_url` with the url created in the **API Gateway**. This links the script to your API endpoint.
 
 2. Starting the REST Proxy: Ensure that your Kafka REST Proxy is active on your EC2 instance. Refer to the [Kafka REST Proxy](#kafka-rest-proxy) section for details on starting the proxy.
 
 3. Run the script: Execute the script to send data to your S3 bucket, which Databricks will use for analysis. Use the command line to run the script:
 
 ```python
-python3 user_posting_emulation.py
+python3 batch_streaming.py
 ```
 If the code outputs a status code "200", it indicates successful data transmission to the S3 bucket. You can verify in the AWS S3 Console under the `<user-UserID-bucket>` bucket.
 
@@ -613,11 +614,11 @@ If the code outputs a status code "200", it indicates successful data transmissi
 
 2. Execution Order: Execute the notebooks in the following sequence for data processing:
 
-    - `data_cleaning_tools.py`: To get the data cleaning utilities.
-    - `data_cleaning.py`: To apply the cleaning process to the datasets.
-    - `data_query.py`: To perform various data analyses and view the results.
+    - `data_cleaning_tools.ipynb`: To get the data cleaning utilities.
+    - `data_cleaning.ipynb`: To apply the cleaning process to the datasets.
+    - `data_sql_query.ipynb`: To perform various data analyses and view the results.
 
-If all the notebook ran successfully, it will show the anticipated results from the `data_query.py` notebook for each of the queries.
+If all the notebook ran successfully, it will show the anticipated results from the `data_sql_query.py` notebook for each of the queries.
 
 **Workflow Orchestration with MWAA:**
 1. DAG Deployment: Transfer your DAG file, such as `0a3db223d459_dag.py`, to the `mwaa-dags-bucket/dags` folder in your S3 bucket. This will synchronize the file with the Airflow UI.
@@ -627,15 +628,15 @@ If all the notebook ran successfully, it will show the anticipated results from 
 > Note: Customize the DAG file to fit your environment, paying particular attention to parameters like **notebook_path** and **existing_cluster_id**.
 
 **Real-Time Data Handling with Kinesis:**
-1. Kinesis Streaming Script: Modify the `invoke_url` in the `user_posting_emulation_streaming.py` script, similarly to how you updated the `user_posting_emulation.py` script.
+1. Kinesis Streaming Script: Modify the `invoke_url` in the `kinesis_streaming.py` script, similarly to how you updated the `batch_processing.py` script.
 
 2. Run the script: Run the script on your local machine to begin streaming data to your Kinesis data stream:
 
 ```python
-python3 user_posting_emulation_streaming.py
+python3 kinesis_streaming.py
 ```
 
-3. Databricks Streaming Notebook: On Databricks, run the `stream_and_clean_kinesis_data.py` notebook. This will process and display the real-time data stream, clean and store the output in Delta tables for subsequent use.
+3. Databricks Streaming Notebook: On Databricks, run the `stream_and_clean_kinesis_data.ipynb` notebook. This will process and display the real-time data stream, clean and store the output in Delta tables for subsequent use.
 
 By following these detailed steps, you can effectively emulate data generation, process and analyse data in batch and real-time, and orchestrate complex workflows using the comprehensive data pipeline you've established.
 
@@ -648,14 +649,19 @@ By following these detailed steps, you can effectively emulate data generation, 
     |-- dags/
         |-- 0a3db223d459_dag.py
     |-- databricks_notebooks/
-        |-- data_cleaning_tools.py
-        |-- data_cleaning.py
-        |-- data_query.py
-        |-- mount_s3_to_databricks.py
-        |-- stream_and_clean_kinesis_data.py
+        |-- access_keys.ipynb
+        |-- data_cleaning_tools.ipynb
+        |-- data_cleaning.ipynb
+        |-- data_sql_query.ipynb
+        |-- mount_s3_to_databricks.ipynb
+        |-- stream_and_clean_kinesis_data.ipynb
+    |-- db/
+        |-- aws_db_connector.py
+    |-- utils/
+        |-- data_transformations.py
+    |-- batch_streaming.py
+    |-- kinesis_streaming.py
     |-- README.md
-    |-- user_posting_emulation.py
-    |-- user_posting_emulation_streaming.py
  
 
     EC2 Instance
@@ -670,7 +676,6 @@ By following these detailed steps, you can effectively emulate data generation, 
         |-- etc/
             |-- kafka-rest/
                 |-- kafka-rest.properties
-
 
 
 ## License Information

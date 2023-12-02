@@ -1,2 +1,4 @@
 0a3db223d459-key-pair.pem
 Notes.txt
+db/__pycache__/
+utils/__pycache__/
