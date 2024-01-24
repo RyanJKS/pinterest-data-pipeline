@@ -29,8 +29,16 @@ def process_and_send(data, stream_name, partition_key, base_url, headers):
 
     stream_url = base_url + stream_name + '/record'
     response = requests.request("PUT", stream_url, headers=headers, data=payload, timeout=30)
-    print(response.json())
-    #print(f"Data sent to {stream_name} with status code: {response.status_code}")
+    
+    if response.status_code == 200:
+        try:
+            # Process the data
+            print(f"Data sent to {stream_name} with status code: {response.status_code}")
+        except json.JSONDecodeError:
+            print('Response is not JSON format')
+            print('Response content:', response.text)
+    else:
+        print('Request failed with status code', response.status_code)
 
     return response.status_code
 

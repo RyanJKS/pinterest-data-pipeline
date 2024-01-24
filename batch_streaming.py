@@ -17,8 +17,7 @@ def process_and_send(data, url, headers):
 def run_batch_processing():
     aws_connector = AWSDBConnector()
 
-    #invoke_url = 'https://mvwqj6m1rk.execute-api.us-east-1.amazonaws.com/dev/topics/'
-    invoke_url = 'https://kgbvktyl9l.execute-api.us-east-1.amazonaws.com/test/topics/'
+    invoke_url = 'https://mvwqj6m1rk.execute-api.us-east-1.amazonaws.com/dev/topics/'
     headers = {'Content-Type': 'application/vnd.kafka.json.v2+json'}
 
     while True:
@@ -29,13 +28,9 @@ def run_batch_processing():
         geo_result = aws_connector.fetch_data(f"SELECT * FROM geolocation_data LIMIT {random_row}, 1")
         user_result = aws_connector.fetch_data(f"SELECT * FROM user_data LIMIT {random_row}, 1")
 
-        # process_and_send(pin_result, invoke_url + '0a3db223d459.pin', headers)
-        # process_and_send(geo_result, invoke_url + '0a3db223d459.geo', headers)
-        # process_and_send(user_result, invoke_url + '0a3db223d459.user', headers)
-        process_and_send(pin_result, invoke_url + '0a2528ba1237.pin', headers)
-        process_and_send(geo_result, invoke_url + '0a2528ba1237.geo', headers)
-        process_and_send(user_result, invoke_url + '0a2528ba1237.user', headers)
-
+        process_and_send(pin_result, invoke_url + '0a3db223d459.pin', headers)
+        process_and_send(geo_result, invoke_url + '0a3db223d459.geo', headers)
+        process_and_send(user_result, invoke_url + '0a3db223d459.user', headers)
 
 if __name__ == "__main__":
     run_batch_processing()
